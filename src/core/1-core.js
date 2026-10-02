@@ -313,7 +313,7 @@ function tokToPath(t) {
   let p;
   if (!t || t === 'home') p = '/';
   else if (t.startsWith('dm-')) p = '/danh-muc/' + t.slice(3);
-  else if (['tools', 'pho-bien', 'moi', 'favorites', 'admin'].includes(t) || INFO[t]) p = '/' + t;
+  else if (['tools', 'pho-bien', 'moi', 'favorites', 'admin', 'ung-ho'].includes(t) || INFO[t]) p = '/' + t;
   else p = '/tools/' + t;
   return BASE + p;
 }
@@ -350,11 +350,12 @@ function route() {
   else if (tok.startsWith('dm-') && CAT[tok.slice(3)]) pageDir(main, { cat: tok.slice(3) });
   else if (tok === 'favorites') pageFav(main);
   else if (tok === 'admin') pageAdmin(main);
+  else if (tok === 'ung-ho') pageDonate(main);
   else if (INFO[tok]) pageInfo(main, tok);
   else if (BY_SLUG[tok]) pageTool(main, BY_SLUG[tok]);
   else if (ALIAS[tok]) { if (PATH) history.replaceState(null, '', tokToPath(ALIAS[tok])); else history.replaceState(null, '', '#' + ALIAS[tok]); return route(); }
   else page404(main);
-  hydrate(main); fixLinks(document.body);
+  hydrate(main); fillAds(main); fixLinks(document.body);
   document.querySelectorAll('[data-nav]').forEach(a => a.setAttribute('aria-current', a.dataset.nav === navKey(tok) ? 'page' : 'false'));
   window.scrollTo(0, 0);
 }
@@ -369,7 +370,70 @@ function navKey(tok) {
 function section(title, inner, link) {
   return '<section><div class="section-head"><h2 class="t-h2">' + title + '</h2>' + (link ? link : '') + '</div>' + inner + '</section>';
 }
-const ad = (label) => '<div class="ad-slot" aria-label="Vị trí quảng cáo">Quảng cáo · ' + label + '</div>';
+/* Quảng cáo / affiliate: nội dung đọc từ file ads.json (sửa file đó, không cần build lại).
+   Vị trí: home (giữa trang chủ) · tool (dưới công cụ) · sidebar (cột phải trang công cụ) · list (cuối danh sách) */
+let ADS = null;
+const ad = (slot, label) => '<div class="ad-wrap" data-ad-slot="' + slot + '" data-label="' + esc(label) + '"></div>';
+function adUrl(u) { return /^(https?:)?\/\//.test(u) || u.startsWith('data:') ? u : (TI.BASE_PATH || '').replace(/\/$/, '') + '/' + u.replace(/^\//, ''); }
+function fillAds(root) {
+  root.querySelectorAll('[data-ad-slot]').forEach(el => {
+    const slot = el.dataset.adSlot, items = ((ADS && ADS.slots && ADS.slots[slot]) || []).filter(it => it && it.url && (it.title || it.image));
+    if (items.length) {
+      const it = items[Math.floor(Math.random() * items.length)];
+      if (it.type === 'banner' || !it.title) { el.innerHTML = '<a class="ad-banner" href="' + esc(it.url) + '" target="_blank" rel="sponsored nofollow noopener" data-ad="' + esc(slot) + '"><img src="' + esc(adUrl(it.image)) + '" alt="' + esc(it.alt || 'Quảng cáo') + '" loading="lazy"></a>'; return; }
+      el.innerHTML = '<a class="ad-card" href="' + esc(it.url) + '" target="_blank" rel="sponsored nofollow noopener" data-ad="' + esc(slot) + '">' +
+        (it.image ? '<img src="' + esc(adUrl(it.image)) + '" alt="" loading="lazy" width="88" height="88">' : '') +
+        '<span class="ad-body"><span class="ad-tag">' + esc(ADS.label || 'Tài trợ') + '</span><span class="ad-title">' + esc(it.title) + '</span>' +
+        (it.desc ? '<span class="ad-desc">' + esc(it.desc) + '</span>' : '') + (it.price ? '<span class="ad-price">' + esc(it.price) + '</span>' : '') + '</span>' +
+        '<span class="btn btn-sm btn-primary ad-btn">' + esc(it.button || 'Xem ngay') + '</span></a>';
+    } else if (ADS && ADS.showPlaceholders === false) el.innerHTML = '';
+    else el.innerHTML = '<div class="ad-slot" aria-label="Vị trí quảng cáo">Quảng cáo · ' + esc(el.dataset.label) + '</div>';
+  });
+  const dn = ADS && ADS.donate && ADS.donate.account ? ADS.donate : null;
+  root.querySelectorAll('[data-donate]').forEach(el => {
+    if (!dn) { el.innerHTML = ''; return; }
+    const kind = el.dataset.donate;
+    if (kind === 'line') el.innerHTML = '<a class="donate-line" href="#ung-ho"><span aria-hidden="true">☕</span><span>' + esc(dn.short || 'Thấy công cụ hữu ích? Ủng hộ tác giả một ly cà phê') + '</span><b>Ủng hộ →</b></a>';
+    else el.innerHTML = donateCard(dn, kind === 'full');
+    fixLinks(el);
+  });
+}
+/* ----- Ủng hộ: thông tin chuyển khoản + mã VietQR (chuẩn NAPAS/EMVCo, tạo ngay trên trình duyệt) ----- */
+function tlv(id, v) { return id + String(v.length).padStart(2, '0') + v; }
+function crc16(str) { let c = 0xFFFF; for (const b of new TextEncoder().encode(str)) { c ^= b << 8; for (let i = 0; i < 8; i++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, '0'); }
+function vietQR({ bin, account, amount, note }) {
+  const acc = tlv('00', 'A000000727') + tlv('01', tlv('00', bin) + tlv('01', account)) + tlv('02', 'QRIBFTTA');
+  const add = note ? tlv('62', tlv('08', note.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').slice(0, 50))) : '';
+  let p = tlv('00', '01') + tlv('01', amount ? '12' : '11') + tlv('38', acc) + tlv('53', '704') + (amount ? tlv('54', String(Math.round(amount))) : '') + tlv('58', 'VN') + add + '6304';
+  return p + crc16(p);
+}
+TI.vietQR = vietQR;
+function qrSvg(text) {
+  const q = TI.qr(text, 'M'), n = q.size + 8; let d = '';
+  q.modules.forEach((row, y) => row.forEach((on, x) => { if (on) d += 'M' + (x + 4) + ' ' + (y + 4) + 'h1v1h-1z'; }));
+  return '<svg viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges" role="img" aria-label="Mã QR chuyển khoản"><rect width="100%" height="100%" fill="#ffffff"/><path d="' + d + '" fill="#111827"/></svg>';
+}
+function donateCard(dn, full) {
+  const qr = (() => { try { return qrSvg(vietQR({ bin: dn.bankBin, account: dn.account, note: dn.note })); } catch (e) { return ''; } })();
+  const row = (k, v, c) => '<div class="donate-row"><span>' + k + '</span><b' + (c ? ' class="mono"' : '') + '>' + esc(v) + '</b>' + (c ? '<button class="btn btn-sm btn-soft" type="button" data-copy-text="' + esc(v) + '">Sao chép</button>' : '') + '</div>';
+  return '<div class="donate' + (full ? ' donate-full' : '') + '">' + (full ? '' : '<h2 class="t-h3">☕ Ủng hộ dự án</h2>') +
+    '<p class="donate-msg">' + esc(dn.message || 'Nếu thấy công cụ hữu ích, bạn có thể chuyển khoản ủng hộ. Đóng góp nhỏ của bạn là động lực để tôi tiếp tục phát triển dự án.') + '</p>' +
+    (qr ? '<div class="donate-qr">' + qr + '<span class="hint">Mở app ngân hàng, chọn Quét QR</span></div>' : '') +
+    '<div class="donate-info">' + row('Ngân hàng', dn.bankName || '') + row('Số tài khoản', dn.account, true) + row('Chủ tài khoản', dn.holder || '') + (dn.note ? row('Nội dung', dn.note, true) : '') + '</div>' +
+    (full ? '' : '<a class="t-small" href="#ung-ho">Xem trang ủng hộ →</a>') + '</div>';
+}
+function pageDonate(main) {
+  setMeta({ title: 'Ủng hộ dự án – Tiện Ích Nhanh', desc: 'Ủng hộ để Tiện Ích Nhanh tiếp tục miễn phí và có thêm công cụ mới.', canonical: SITE + '/ung-ho' });
+  main.innerHTML = '<div class="wrap stack" style="max-width:760px"><ol class="crumbs"><li><a href="#">Trang chủ</a></li><li aria-current="page">Ủng hộ dự án</li></ol>' +
+    '<h1 class="t-h1">Ủng hộ Tiện Ích Nhanh</h1><div class="card card-pad" data-donate="full"><p class="muted">Đang tải thông tin…</p></div>' +
+    '<div class="prose"><p>Mọi công cụ trên website đều miễn phí và không cần đăng nhập. Tiền ủng hộ được dùng cho tên miền, thời gian phát triển công cụ mới và cải thiện công cụ hiện có.</p><p>Bạn cũng có thể ủng hộ bằng cách chia sẻ website cho bạn bè, hoặc gửi góp ý công cụ bạn muốn có.</p></div></div>';
+}
+function loadAds() {
+  document.addEventListener('click', e => { const b = e.target.closest('[data-copy-text]'); if (b) copy(b.dataset.copyText); });
+  if (!PATH || !window.fetch) return;
+  fetch((TI.BASE_PATH || '').replace(/\/$/, '') + '/ads.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => { ADS = j; fillAds(document); }).catch(() => {});
+  document.addEventListener('click', e => { const a = e.target.closest('[data-ad]'); if (!a) return; track('ad_click', currentSlug, a.dataset.ad); if (window.gtag) window.gtag('event', 'ad_click', { slot: a.dataset.ad, link_url: a.href }); });
+}
 
 const QUICK = ['dem-ky-tu', 'doi-chu-hoa-thuong', 'tinh-phan-tram', 'tinh-tuoi', 'quay-random', 'tung-xuc-xac', 'tao-qr-code', 'resize-anh', 'tao-mat-khau', 'tinh-vat', 'kiem-tra-toc-do-go-phim', 'json-formatter'];
 const COLLECTIONS = [
@@ -391,7 +455,7 @@ function pageHome(main) {
     '<div class="hero-meta"><span><b>' + live + '</b> công cụ dùng ngay</span><span><b>' + total + '</b> công cụ trong kho</span><span><b>' + CATS.length + '</b> danh mục</span><span>Không cần đăng nhập</span></div></section>' +
     (rec.length ? section('Bạn vừa sử dụng', '<div class="tool-grid">' + rec.slice(0, 4).map(t => toolCard(t, { compact: true })).join('') + '</div>') : '') +
     section('Công cụ được sử dụng nhiều', '<div class="tool-grid">' + QUICK.map(s => BY_SLUG[s]).filter(Boolean).map(t => toolCard(t)).join('') + '</div>', '<a href="#pho-bien">Xem tất cả →</a>') +
-    ad('Banner giữa trang 728×90') +
+    ad('home', 'Banner giữa trang') +
     section('Khám phá công cụ', '<div class="cat-grid">' + CATS.map(catCard).join('') + '</div>', '<a href="#tools">Tất cả công cụ →</a>') +
     section('Công cụ mới', '<div class="tool-grid">' + newest.map(t => toolCard(t)).join('') + '</div>', '<a href="#moi">Xem thêm →</a>') +
     '<section class="stack"><h2 class="t-h2">Website tiện ích online miễn phí</h2><div class="prose">' +
@@ -427,7 +491,7 @@ function pageDir(main, opt) {
     '<select class="select" id="dir-sort" aria-label="Sắp xếp"><option value="pop">Phổ biến nhất</option><option value="new">Mới nhất</option><option value="az">Tên A → Z</option></select>' +
     '<select class="select" id="dir-level" aria-label="Độ khó"><option value="0">Mọi độ khó</option><option value="1">Dễ dùng</option><option value="2">Trung bình</option><option value="3">Nâng cao</option></select>' +
     '<select class="select" id="dir-status" aria-label="Trạng thái"><option value="all">Tất cả</option><option value="live">Dùng ngay</option><option value="soon">Sắp ra mắt</option></select></div>' +
-    '<div id="dir-count" class="t-small muted"></div><div class="tool-grid" id="dir-grid"></div><nav class="pager" id="dir-pager" aria-label="Phân trang"></nav>' + ad('Cuối danh sách') + '</div></div></div>';
+    '<div id="dir-count" class="t-small muted"></div><div class="tool-grid" id="dir-grid"></div><nav class="pager" id="dir-pager" aria-label="Phân trang"></nav>' + ad('list', 'Cuối danh sách') + '</div></div></div>';
   const $ = s => main.querySelector(s);
   $('#dir-sort').value = dirState.sort; $('#dir-level').value = dirState.level; $('#dir-status').value = dirState.status;
   const PER = 24;
@@ -508,11 +572,11 @@ function pageTool(main, t) {
     '<div class="row" style="flex-wrap:nowrap"><button class="btn btn-icon" type="button" id="share" data-tip="Sao chép liên kết" aria-label="Sao chép liên kết">' + ICON.link + '</button><button class="btn btn-icon fav-btn" style="width:40px;height:40px;border:1px solid var(--border);border-radius:var(--radius-md)" type="button" data-fav="' + t.slug + '"></button></div></div>' +
     '<div class="card"><div class="tool-body" id="tool-root"></div></div>' +
     (t.live ? '<div class="privacy">' + ICON.lock + '<span>' + (t.server ? esc(t.server) : 'Xử lý trực tiếp trên trình duyệt. Dữ liệu của bạn không được gửi lên máy chủ.') + '</span></div>' : '') +
-    ad('Trong nội dung') +
+    '<div data-donate="line"></div>' + ad('tool', 'Trong nội dung') +
     (t.how ? '<section class="card card-pad stack"><h2 class="t-h3">Cách sử dụng</h2><ol class="stack" style="margin:0;padding-left:20px;gap:6px">' + t.how.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol></section>' : '') +
     '<section class="card card-pad faq"><h2 class="t-h3" style="margin-bottom:4px">Câu hỏi thường gặp</h2>' + faq.map(([q, a], i) => '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(q) + '</summary><p>' + esc(a) + '</p></details>').join('') + '</section>' +
     section('Có thể bạn cũng cần', '<div class="tool-grid">' + rel.map(x => toolCard(x)).join('') + '</div>') +
-    '</div><aside class="aside">' + ad('Sidebar 300×250') +
+    '</div><aside class="aside">' + ad('sidebar', 'Sidebar') + '<div data-donate="card"></div>' +
     (same.length ? '<div class="card card-pad"><h2 class="t-caption" style="margin-bottom:8px">Cùng danh mục ' + esc(c.name) + '</h2><ul class="link-list">' + same.map(x => '<li><a href="#' + x.slug + '"><span>' + x.icon + '</span>' + esc(x.name) + '</a></li>').join('') + '</ul><a class="t-small" href="#dm-' + c.id + '">Xem tất cả ' + esc(c.name.toLowerCase()) + ' →</a></div>' : '') +
     '<div class="card card-pad stack" style="gap:6px"><h2 class="t-caption">Trang này trên Google</h2><div class="seo-url">' + esc(url.replace('https://', '')) + '</div><div style="color:var(--primary);font-weight:600;font-size:15px;line-height:1.35">' + esc(seoTitle) + '</div><div class="t-small muted">' + esc(seoDesc) + '</div></div>' +
     '</aside></div></div>';
@@ -600,7 +664,7 @@ function openDrawer() {
   d.innerHTML = '<div class="drawer-panel" role="dialog" aria-label="Menu"><div class="spread"><a class="logo" href="#">' + LOGO + '<span>Tiện Ích Nhanh</span></a><button class="btn btn-ghost btn-icon" type="button" id="dr-x" aria-label="Đóng menu">' + ICON.x + '</button></div>' +
     '<nav class="drawer-links"><a href="#">🏠 Trang chủ</a><a href="#tools">🗂️ Tất cả công cụ</a><a href="#pho-bien">🔥 Công cụ phổ biến</a><a href="#moi">✨ Công cụ mới</a><a href="#favorites">♡ Yêu thích</a></nav>' +
     '<div class="t-caption">Danh mục</div><nav class="drawer-links">' + CATS.map(c => '<a href="#dm-' + c.id + '">' + c.icon + ' ' + esc(c.name) + '</a>').join('') + '</nav>' +
-    '<div class="t-caption">Thông tin</div><nav class="drawer-links"><a href="#gioi-thieu">Giới thiệu</a><a href="#lien-he">Liên hệ</a><a href="#bao-mat">Chính sách bảo mật</a><a href="#admin">Bảng quản trị (xem trước)</a></nav></div>';
+    '<div class="t-caption">Thông tin</div><nav class="drawer-links"><a href="#gioi-thieu">Giới thiệu</a><a href="#lien-he">Liên hệ</a><a href="#bao-mat">Chính sách bảo mật</a><a href="#ung-ho">☕ Ủng hộ dự án</a><a href="#admin">Bảng quản trị (xem trước)</a></nav></div>';
   document.body.appendChild(d); document.body.style.overflow = 'hidden';
   d.addEventListener('click', e => { if (e.target === d || e.target.closest('#dr-x') || e.target.closest('a')) closeOverlays(); });
 }
@@ -622,7 +686,7 @@ function shell() {
   ft.innerHTML = '<div class="wrap"><div class="ftr-grid"><div class="stack" style="gap:10px"><a class="logo" href="#">' + LOGO + '<span>Tiện Ích Nhanh</span></a><p class="t-small muted">Mọi công cụ bạn cần – ngay trên một website. Miễn phí, nhanh, không cần cài đặt.</p></div>' +
     '<div><h4>Công cụ</h4><ul>' + [['text', 'Văn bản'], ['calc', 'Máy tính'], ['image', 'Hình ảnh'], ['pdf', 'PDF'], ['random', 'Random'], ['dev', 'Developer']].map(([k, n]) => '<li><a href="#dm-' + k + '">' + n + '</a></li>').join('') + '</ul></div>' +
     '<div><h4>Phổ biến</h4><ul>' + ['tinh-phan-tram', 'quay-random', 'vong-quay-may-man', 'tao-qr-code', 'tinh-luong-gross-net', 'nen-anh'].map(s => BY_SLUG[s]).filter(Boolean).map(t => '<li><a href="#' + t.slug + '">' + esc(t.name) + '</a></li>').join('') + '</ul></div>' +
-    '<div><h4>Thông tin</h4><ul><li><a href="#gioi-thieu">Giới thiệu</a></li><li><a href="#lien-he">Liên hệ</a></li><li><a href="#bao-mat">Chính sách bảo mật</a></li><li><a href="#dieu-khoan">Điều khoản sử dụng</a></li><li><a href="#cookie">Cookie</a></li></ul></div></div>' +
+    '<div><h4>Thông tin</h4><ul><li><a href="#gioi-thieu">Giới thiệu</a></li><li><a href="#lien-he">Liên hệ</a></li><li><a href="#bao-mat">Chính sách bảo mật</a></li><li><a href="#dieu-khoan">Điều khoản sử dụng</a></li><li><a href="#cookie">Cookie</a></li><li><a href="#ung-ho">☕ Ủng hộ dự án</a></li></ul></div></div>' +
     '<div class="ftr-bottom"><span>© 2026 Tiện Ích Nhanh. Công cụ xử lý trên trình duyệt không gửi dữ liệu của bạn lên máy chủ.</span><span>' + ALL.length + ' công cụ · ' + CATS.length + ' danh mục</span></div></div>';
   document.addEventListener('keydown', e => {
     if (e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) { const i = document.querySelector('#hdr-search input'); if (i && i.offsetParent) { e.preventDefault(); i.focus(); } else { e.preventDefault(); openSearchSheet(); } }
@@ -630,7 +694,7 @@ function shell() {
   });
 }
 TI.boot = function () {
-  buildIndex();
+  buildIndex(); loadAds();
   const saved = store.get('theme', null); if (saved) document.documentElement.setAttribute('data-theme', saved);
   shell(); theme(document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
   if (!saved) { document.documentElement.removeAttribute('data-theme'); store.set('theme', null); }

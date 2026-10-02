@@ -92,7 +92,7 @@ const withBase = c => BASE ? c.replace(/((?:href|src)="|url=)\/(?!\/)/g, `$1${BA
 const write = (rel, content) => { if (rel.endsWith('.html')) content = withBase(content); const f = path.join(OUT, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, content); };
 write('assets/' + jsName, appJs);
 write('assets/' + cssName, css);
-for (const f of fs.readdirSync(path.join(ROOT, 'public'))) fs.copyFileSync(path.join(ROOT, 'public', f), path.join(OUT, f));
+fs.cpSync(path.join(ROOT, 'public'), OUT, { recursive: true });   // copy cả thư mục con (ví dụ public/ads/)
 
 if (MODE === 'spa') {
   const shell = (title, desc) => page({ url: '/', title, desc, noindex: NOINDEX, main: `<h1 class="t-display">Mọi công cụ bạn cần, ngay trên một website.</h1>${toolLinks(LIVE.slice().sort(byPop).slice(0, 24))}` });

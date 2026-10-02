@@ -1,0 +1,19 @@
+{
+  "label": "Tài trợ",
+  "showPlaceholders": false,
+  "slots": {
+    "home": [
+      {
+        "title": "Bình giữ nhiệt inox 500ml",
+        "desc": "Giữ nóng 12 giờ, giữ lạnh 24 giờ",
+        "price": "159.000 ₫",
+        "image": "ads/binh-giu-nhiet.jpg",
+        "url": "https://DAN-LINK-AFFILIATE-SHOPEE-CUA-BAN-VAO-DAY",
+        "button": "Xem trên Shopee"
+      }
+    ],
+    "tool": [],
+    "sidebar": [],
+    "list": []
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "label": "Tài trợ",
+  "showPlaceholders": false,
+  "slots": {
+    "home": [
+      { "type": "banner", "image": "ads/ung-ho-shopee.webp", "url": "https://s.shopee.vn/9pellxOVqo", "alt": "Mong mọi người ủng hộ tôi bằng việc nhấp vào banner Shopee" }
+    ],
+    "tool": [
+      { "type": "banner", "image": "ads/ung-ho-shopee.webp", "url": "https://s.shopee.vn/9pellxOVqo", "alt": "Mong mọi người ủng hộ tôi bằng việc nhấp vào banner Shopee" }
+    ],
+    "sidebar": [],
+    "list": [
+      { "type": "banner", "image": "ads/ung-ho-shopee.webp", "url": "https://s.shopee.vn/9pellxOVqo", "alt": "Mong mọi người ủng hộ tôi bằng việc nhấp vào banner Shopee" }
+    ]
+  },
+  "donate": {
+    "bankName": "Vietcombank",
+    "bankBin": "970436",
+    "account": "9366316910",
+    "holder": "NGUYEN VAN QUY",
+    "note": "Ung ho Tien Ich Nhanh",
+    "short": "Thấy công cụ hữu ích? Ủng hộ tác giả một ly cà phê",
+    "message": "Nếu thấy công cụ hữu ích, bạn có thể chuyển khoản ủng hộ tôi. Đóng góp nhỏ của bạn là động lực để tôi tiếp tục phát triển dự án."
+  }
+}

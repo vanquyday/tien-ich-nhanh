@@ -36,6 +36,51 @@ Mỗi lần đẩy code mới lên nhánh `main`, website tự build lại.
 
 > Thư mục `.github` là thư mục ẩn. Nếu upload bằng cách kéo thả trên trình duyệt, nó có thể bị bỏ sót và website sẽ không tự build. Dùng GitHub Desktop hoặc dòng lệnh để chắc chắn.
 
+## Gắn link affiliate (Shopee…) vào ô quảng cáo
+
+Nội dung các ô quảng cáo đọc từ file **`docs/ads.json`** (bản nguồn: `public/ads.json`). Sửa file này ngay trên GitHub là website đổi theo, không cần build lại.
+
+| Vị trí (`slots`) | Hiện ở đâu |
+| --- | --- |
+| `home` | Giữa trang chủ |
+| `tool` | Ngay dưới mỗi công cụ |
+| `sidebar` | Cột phải trang công cụ (máy tính) |
+| `list` | Cuối trang danh sách công cụ |
+
+Mỗi vị trí là một danh sách sản phẩm; có nhiều sản phẩm thì mỗi lần tải trang hiện ngẫu nhiên một cái. Mẫu đầy đủ: `ads.example.json`.
+
+```json
+{
+  "label": "Tài trợ",
+  "showPlaceholders": false,
+  "slots": {
+    "home": [
+      {
+        "title": "Bình giữ nhiệt inox 500ml",
+        "desc": "Giữ nóng 12 giờ, giữ lạnh 24 giờ",
+        "price": "159.000 ₫",
+        "image": "ads/binh-giu-nhiet.jpg",
+        "url": "https://link-affiliate-shopee-cua-ban",
+        "button": "Xem trên Shopee"
+      }
+    ],
+    "tool": [], "sidebar": [], "list": []
+  }
+}
+```
+
+- `url`: link affiliate lấy từ trang Shopee Affiliate (bắt buộc).
+- `image`: ảnh vuông, upload vào `docs/ads/` rồi ghi `ads/ten-anh.jpg` (hoặc dán link ảnh đầy đủ `https://…`).
+- `showPlaceholders: false`: ẩn các ô chưa có sản phẩm.
+- Link tự có `rel="sponsored nofollow"` (đúng quy định của Google cho link tiếp thị) và mở ở tab mới.
+- File JSON rất kén dấu phẩy và ngoặc kép: sửa xong nên dán vào https://jsonlint.com để kiểm tra.
+
+### Banner ảnh và thông tin ủng hộ
+
+- Banner ảnh: thêm `{ "type": "banner", "image": "ads/ten-anh.webp", "url": "link-affiliate", "alt": "mô tả ảnh" }` vào một vị trí. Ảnh nên rộng 1200 px.
+- Mục `donate` trong `ads.json` điều khiển khung “Ủng hộ dự án” (cột phải trang công cụ, dòng nhắc dưới công cụ, trang `/ung-ho`). Mã QR chuyển khoản (chuẩn VietQR) được tạo tự động từ `bankBin` + `account`, nên đổi số tài khoản là QR đổi theo.
+- `bankBin` là mã ngân hàng theo NAPAS, ví dụ Vietcombank `970436`. Xóa cả mục `donate` để ẩn phần ủng hộ.
+
 ## Chạy trên máy
 
 Cần Node.js 18 trở lên (https://nodejs.org).
