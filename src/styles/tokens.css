@@ -1,0 +1,51 @@
+/* Layout: sticky slim header, one centred 1200px column; search first, cards in fluid grids; bottom tab bar on phones. */
+:root {
+  --primary: #2563eb; --primary-hover: #1d4ed8; --primary-soft: #eff6ff; --primary-soft-ink: #1d4ed8; --on-primary: #ffffff;
+  --ink-strong: #111827; --ink: #1f2937; --ink-muted: #6b7280;
+  --bg: #f8fafc; --surface: #ffffff; --surface-sunken: #f1f5f9; --border: #e5e7eb; --border-control: #8b95a5; --focus: #2563eb;
+  --success: #15803d; --success-soft: #f0fdf4; --danger: #b91c1c; --danger-soft: #fef2f2; --warning: #b45309; --warning-soft: #fffbeb;
+  --acc-blue-bg: #eff6ff; --acc-blue-fg: #1d4ed8; --acc-teal-bg: #f0fdfa; --acc-teal-fg: #0f766e;
+  --acc-amber-bg: #fffbeb; --acc-amber-fg: #b45309; --acc-violet-bg: #f5f3ff; --acc-violet-fg: #6d28d9;
+  --acc-rose-bg: #fff1f2; --acc-rose-fg: #be123c; --acc-green-bg: #f0fdf4; --acc-green-fg: #15803d;
+  --acc-slate-bg: #f1f5f9; --acc-slate-fg: #334155;
+  --scrim: rgba(17, 24, 39, 0.48);
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --shadow-md: 0 6px 18px rgba(17, 24, 39, 0.08), 0 1px 3px rgba(17, 24, 39, 0.06);
+  --shadow-lg: 0 18px 48px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+  --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px; --radius-pill: 999px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #60a5fa; --primary-hover: #93c5fd; --primary-soft: #172554; --primary-soft-ink: #93c5fd; --on-primary: #0b1120;
+    --ink-strong: #f9fafb; --ink: #e5e7eb; --ink-muted: #9ca3af;
+    --bg: #0b1120; --surface: #111827; --surface-sunken: #1a2333; --border: #1f2a3a; --border-control: #5b6678; --focus: #60a5fa;
+    --success: #4ade80; --success-soft: #052e16; --danger: #f87171; --danger-soft: #450a0a; --warning: #fbbf24; --warning-soft: #3a2405;
+    --acc-blue-bg: #172554; --acc-blue-fg: #93c5fd; --acc-teal-bg: #042f2e; --acc-teal-fg: #5eead4;
+    --acc-amber-bg: #3a2405; --acc-amber-fg: #fcd34d; --acc-violet-bg: #2e1065; --acc-violet-fg: #c4b5fd;
+    --acc-rose-bg: #4c0519; --acc-rose-fg: #fda4af; --acc-green-bg: #052e16; --acc-green-fg: #86efac;
+    --acc-slate-bg: #1e293b; --acc-slate-fg: #cbd5e1;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #60a5fa; --primary-hover: #93c5fd; --primary-soft: #172554; --primary-soft-ink: #93c5fd; --on-primary: #0b1120;
+  --ink-strong: #f9fafb; --ink: #e5e7eb; --ink-muted: #9ca3af;
+  --bg: #0b1120; --surface: #111827; --surface-sunken: #1a2333; --border: #1f2a3a; --border-control: #5b6678; --focus: #60a5fa;
+  --success: #4ade80; --success-soft: #052e16; --danger: #f87171; --danger-soft: #450a0a; --warning: #fbbf24; --warning-soft: #3a2405;
+  --acc-blue-bg: #172554; --acc-blue-fg: #93c5fd; --acc-teal-bg: #042f2e; --acc-teal-fg: #5eead4;
+  --acc-amber-bg: #3a2405; --acc-amber-fg: #fcd34d; --acc-violet-bg: #2e1065; --acc-violet-fg: #c4b5fd;
+  --acc-rose-bg: #4c0519; --acc-rose-fg: #fda4af; --acc-green-bg: #052e16; --acc-green-fg: #86efac;
+  --acc-slate-bg: #1e293b; --acc-slate-fg: #cbd5e1;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
