@@ -17,6 +17,8 @@ const cfg = JSON.parse(r('site.config.json'));
 const SITE = (process.env.SITE_URL || cfg.siteUrl).replace(/\/$/, '');
 const BASE = (process.env.BASE_PATH ?? cfg.basePath ?? '').replace(/\/$/, '');   // '' = chạy ở gốc tên miền
 const NOINDEX = process.env.NOINDEX === '1' || cfg.noindex === true;            // true = chặn Google (bản thử nghiệm)
+// 'full' = mỗi công cụ một file HTML (tốt cho SEO, ~800 file) · 'spa' = chỉ vài file, trang con do 404.html + JS hiển thị (để thử nghiệm)
+const MODE = process.env.BUILD_MODE || cfg.buildMode || 'full';
 const OUT = path.join(ROOT, 'dist');
 
 // ---------- 1. Gom mã nguồn ----------
@@ -92,6 +94,16 @@ write('assets/' + jsName, appJs);
 write('assets/' + cssName, css);
 for (const f of fs.readdirSync(path.join(ROOT, 'public'))) fs.copyFileSync(path.join(ROOT, 'public', f), path.join(OUT, f));
 
+if (MODE === 'spa') {
+  const shell = (title, desc) => page({ url: '/', title, desc, noindex: NOINDEX, main: `<h1 class="t-display">Mọi công cụ bạn cần, ngay trên một website.</h1>${toolLinks(LIVE.slice().sort(byPop).slice(0, 24))}` });
+  write('index.html', shell(`${cfg.siteName} – Hàng trăm công cụ online miễn phí`, 'Hàng trăm tiện ích miễn phí cho công việc, học tập, kinh doanh và cuộc sống hằng ngày.'));
+  write('404.html', shell(cfg.siteName, 'Công cụ online miễn phí'));
+  write('robots.txt', NOINDEX ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nAllow: /\n');
+  write('.nojekyll', '');
+  const n = fs.readdirSync(OUT, { recursive: true }).filter(f => fs.statSync(path.join(OUT, f)).isFile()).length;
+  console.log(`✓ Build xong (chế độ spa, ${n} file${BASE ? ', đường dẫn gốc ' + BASE : ''}): ${LIVE.length} công cụ chạy được`);
+  process.exit(0);
+}
 const sitemap = [];
 const add = (url, html, inSitemap = true, prio = '0.6') => { write(url === '/' ? 'index.html' : url.slice(1) + '/index.html', html); if (inSitemap) sitemap.push([url, prio]); };
 

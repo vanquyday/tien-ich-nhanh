@@ -48,9 +48,10 @@ TI.define = function (t) {
   LIVE.push(t); BY_SLUG[t.slug] = t;
 };
 let ALL = [];             // live + catalog (sắp ra mắt)
+const ALIAS = {};         // slug cũ / tiếng Anh → slug chính
 function buildIndex() {
   const taken = new Set();
-  LIVE.forEach(t => { taken.add(t.slug); t.aliases.forEach(a => taken.add(a)); });
+  LIVE.forEach(t => { taken.add(t.slug); t.aliases.forEach(a => { taken.add(a); ALIAS[a] = t.slug; }); });
   const soon = (TI.CATALOG || []).filter(r => !taken.has(r[0])).map((r, i) => ({
     slug: r[0], name: r[1], cat: r[2], desc: r[3], audience: r[4], level: r[5], pri: r[6], live: false,
     icon: CAT[r[2]].icon, kw: '', pop: 0, order: i
@@ -351,6 +352,7 @@ function route() {
   else if (tok === 'admin') pageAdmin(main);
   else if (INFO[tok]) pageInfo(main, tok);
   else if (BY_SLUG[tok]) pageTool(main, BY_SLUG[tok]);
+  else if (ALIAS[tok]) { if (PATH) history.replaceState(null, '', tokToPath(ALIAS[tok])); else history.replaceState(null, '', '#' + ALIAS[tok]); return route(); }
   else page404(main);
   hydrate(main); fixLinks(document.body);
   document.querySelectorAll('[data-nav]').forEach(a => a.setAttribute('aria-current', a.dataset.nav === navKey(tok) ? 'page' : 'false'));

@@ -8,6 +8,18 @@ Website tĩnh (HTML + CSS + JS): không cần máy chủ, không cần cơ sở 
 
 ## Thử trên GitHub Pages
 
+**Cách nhanh (upload trên trình duyệt):** thư mục `docs/` đã build sẵn cho `vanquyday.github.io/tien-ich-nhanh`, chỉ 9 file. Upload repo lên GitHub, rồi vào **Settings → Pages → Deploy from a branch → main / docs → Save**.
+
+Build lại `docs/` (sau khi sửa code):
+
+```
+BUILD_MODE=spa BASE_PATH=/tien-ich-nhanh SITE_URL=https://vanquyday.github.io/tien-ich-nhanh NOINDEX=1 node build.mjs
+```
+
+rồi thay thư mục `docs/` bằng thư mục `dist/` vừa tạo. (Windows cmd: đặt từng biến bằng `set TEN=gia_tri` trước khi chạy.)
+
+**Cách tự động (GitHub Actions):**
+
 1. Tạo repository mới trên GitHub, ví dụ `tien-ich-nhanh` (Public, hoặc Private nếu tài khoản có GitHub Pro).
 2. Đưa thư mục này lên repository bằng một trong hai cách:
    - **GitHub Desktop:** File → Add local repository → chọn thư mục này → Publish repository.
